@@ -39,7 +39,7 @@ Contributions are welcome! Here's how to get started:
    ```bash
    git clone https://github.com/<your-username>/Burrito.git
    ```
-3. Open `Burrito.xcodeproj` in Xcode (15+, macOS Sonoma).
+3. Open `Burrito.xcodeproj` in Xcode (15+).
 4. Create a new branch for your change:
    ```bash
    git checkout -b my-feature
