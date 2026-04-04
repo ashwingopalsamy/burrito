@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/de94b2fd-c711-46d1-b790-6626954f07af
 
 ## Download
 
-**Option 1** — Grab the latest `.dmg` from [GitHub Releases](https://github.com/saranonearth/Burrito/releases).
+**Option 1** — Grab the latest `.dmg` from [GitHub Releases](https://github.com/SwishHQ/burrito/releases).
 
 **Option 2** — Install via the command line:
 
