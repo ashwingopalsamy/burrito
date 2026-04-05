@@ -45,6 +45,36 @@ struct FannedImageStack: View {
     }
 }
 
+struct ShakeEffect: GeometryEffect {
+    var shakes: CGFloat = 0
+    var animatableData: CGFloat {
+        get { shakes }
+        set { shakes = newValue }
+    }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let translation = 6 * sin(shakes * .pi * 2)
+        return ProjectionTransform(CGAffineTransform(translationX: translation, y: 0))
+    }
+}
+
+struct ErrorIconView: View {
+    @State private var shakeCount: CGFloat = 0
+
+    var body: some View {
+        Image(systemName: "exclamationmark.triangle.fill")
+            .font(.system(size: 42))
+            .foregroundColor(Color(red: 0.91, green: 0.66, blue: 0.09))
+            .shadow(color: Color(red: 0.91, green: 0.66, blue: 0.09).opacity(0.5), radius: 8, x: 0, y: 0)
+            .modifier(ShakeEffect(shakes: shakeCount))
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.4)) {
+                    shakeCount = 3
+                }
+            }
+    }
+}
+
 struct DropZoneView: View {
     @Binding var showSettings: Bool
     @StateObject var processor = ImageProcessor()
@@ -115,22 +145,29 @@ struct DropZoneView: View {
                             let elapsedTime = timeline.date.timeIntervalSince(processor.processingStartTime)
                             let dropTime = elapsedTime.truncatingRemainder(dividingBy: 2.0)
                             let successTime = timeline.date.timeIntervalSince(processor.successStartTime)
+                            let errorTime = timeline.date.timeIntervalSince(processor.errorStartTime)
 
                             let isSuccess = processor.isSuccess
-                            let rippleTime = isSuccess ? successTime : dropTime
-                            let amplitude: Float = isSuccess ? 1.5 : 12.0
-                            let frequency: Float = isSuccess ? 20.0 : 15.0
-                            let decay: Float     = isSuccess ? 5.0 : 8.0
-                            let speed: Float     = isSuccess ? 900.0 : 1000.0
+                            let isError = processor.isError
+                            let rippleTime = isSuccess ? successTime : (isError ? errorTime : dropTime)
+                            let amplitude: Float = isSuccess ? 1.5 : (isError ? 1.2 : 12.0)
+                            let frequency: Float = isSuccess ? 20.0 : (isError ? 22.0 : 15.0)
+                            let decay: Float     = isSuccess ? 5.0 : (isError ? 7.0 : 8.0)
+                            let speed: Float     = isSuccess ? 900.0 : (isError ? 800.0 : 1000.0)
 
                             ZStack {
                                 // Background
                                 ZStack {
                                     Color.black
                                     Circle()
-                                        .fill(Color(red: 0.20, green: 0.764, blue: 0.388).opacity(isSuccess ? 0.6 : 0.3))
+                                        .fill(
+                                            (isError
+                                                ? Color(red: 0.91, green: 0.66, blue: 0.09)
+                                                : Color(red: 0.20, green: 0.764, blue: 0.388))
+                                            .opacity(isSuccess ? 0.6 : (isError ? 0.5 : 0.3))
+                                        )
                                         .frame(width: 160)
-                                        .blur(radius: 40)
+                                        .blur(radius: isError ? 35 : 40)
                                         .offset(x: -40, y: -20)
                                     Circle()
                                         .fill(Color.white.opacity(0.15))
@@ -164,6 +201,16 @@ struct DropZoneView: View {
                                             .foregroundColor(.white)
                                             .padding(.bottom, 16)
                                             .transition(.opacity)
+                                    } else if processor.isError {
+                                        ErrorIconView()
+                                            .transition(.scale.combined(with: .opacity))
+
+                                        Text("FAILED")
+                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                            .tracking(2.0)
+                                            .foregroundColor(.white)
+                                            .padding(.bottom, 16)
+                                            .transition(.opacity)
                                     } else {
                                         FannedImageStack(images: processor.processingImages)
                                             .transition(.scale.combined(with: .opacity))
@@ -177,6 +224,7 @@ struct DropZoneView: View {
                                     }
                                 }
                                 .animation(.spring(response: 0.10, dampingFraction: 0.65), value: processor.isSuccess)
+                                .animation(.spring(response: 0.08, dampingFraction: 0.70), value: processor.isError)
                             }
                             .layerEffect(
                                 ShaderLibrary.Ripple(
@@ -203,7 +251,16 @@ struct DropZoneView: View {
             .padding(2)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(processor.isProcessing ? (processor.isSuccess ? Color.green.opacity(0.4) : Color.white.opacity(0.3)) : Color.white.opacity(0.15), style: StrokeStyle(lineWidth: 2, dash: [6, 6]))
+                    .stroke(
+                        processor.isProcessing
+                            ? (processor.isSuccess
+                                ? Color.green.opacity(0.4)
+                                : (processor.isError
+                                    ? Color(red: 0.91, green: 0.66, blue: 0.09).opacity(0.4)
+                                    : Color.white.opacity(0.3)))
+                            : Color.white.opacity(0.15),
+                        style: StrokeStyle(lineWidth: 2, dash: [6, 6])
+                    )
                     .animation(.easeInOut, value: processor.isProcessing)
             )
             .padding(12)

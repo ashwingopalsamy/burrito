@@ -23,6 +23,8 @@ class ImageProcessor: ObservableObject {
     @Published var processingStartTime: Date = Date()
     @Published var successStartTime: Date = Date()
     @Published var processingImages: [NSImage] = []
+    @Published var isError = false
+    @Published var errorStartTime: Date = Date()
     
     func processDroppedURLs(_ urls: [URL], to targetFormat: TargetFormat) {
         let previewCount = min(urls.count, 3)
@@ -69,12 +71,21 @@ class ImageProcessor: ObservableObject {
                         }
                     }
                 } else {
-                    // FAILURE STATE: Abort immediately without showing Success checkmark
-                    print("Processing failed. Aborting UI.")
-                    withAnimation(.easeInOut(duration: 0.5)) {
-                        self.isProcessing = false
-                        self.activeFormat = nil
-                        self.processingImages = []
+                    withAnimation(.spring(response: 0.08, dampingFraction: 0.70)) {
+                        self.isError = true
+                        self.errorStartTime = Date()
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            self.isProcessing = false
+                        }
+
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            self.isError = false
+                            self.activeFormat = nil
+                            self.processingImages = []
+                        }
                     }
                 }
             }
