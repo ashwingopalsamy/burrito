@@ -65,6 +65,7 @@ class ImageProcessor: ObservableObject {
                         }
                         
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            guard !self.isProcessing else { return }
                             self.isSuccess = false
                             self.activeFormat = nil
                             self.processingImages = []
