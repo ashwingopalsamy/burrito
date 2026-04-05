@@ -36,6 +36,7 @@ class ImageProcessor: ObservableObject {
         withAnimation(.easeInOut(duration: 0.3)) {
             self.isProcessing = true
             self.isSuccess = false
+            self.isError = false
             self.activeFormat = targetFormat
             self.processingStartTime = Date()
             self.processingImages = thumbnails
@@ -83,6 +84,7 @@ class ImageProcessor: ObservableObject {
                         }
 
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            guard !self.isProcessing else { return }
                             self.isError = false
                             self.activeFormat = nil
                             self.processingImages = []
